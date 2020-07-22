@@ -1,0 +1,14 @@
+[package]
+name = "unzip"
+description = "Library to decompress all (or some) files from a zipped archive."
+version = "0.1.0"
+authors = ["Ryan Leonard (http://ryanleonard.us)"]
+license = "MIT"
+
+[dev-dependencies]
+temporary = "0.6.3"
+
+[dependencies]
+zip = "0.2.6"
+time = "0.1.38"
+transformation-pipeline = "0.1.0"

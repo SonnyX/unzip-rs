@@ -1,0 +1,20 @@
+image: rust:latest
+
+stages:
+  - test
+  - publish
+
+test:
+  stage: test
+  script:
+    - cargo test
+
+publish:
+  only:
+    - tags
+  stage: publish
+  before_script:
+    - cargo login "$CARGO_IO_KEY"
+  script:
+    - cargo package
+    - cargo publish

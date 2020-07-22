@@ -1,0 +1,6 @@
+# Auto detect text files and perform LF normalization
+*.rs text=auto eol=lf
+*.yml text=auto eol=lf
+*.toml text=auto eol=lf
+*.sh text=auto eol=lf
+*.md text=auto
