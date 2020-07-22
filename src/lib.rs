@@ -14,24 +14,18 @@ use transformation_metadata::ExtractionMetadata;
 mod strip_components;
 use strip_components::StripComponents;
 
+#[derive(Debug)]
 pub struct UnzipperStats {
-
-    dirs: u16,
-
-    files: u16,
-
+    pub dirs: u16,
+    pub files: u16,
 }
 
 type UnzipperResult = Result<UnzipperStats, io::Error>;
 
 pub struct Unzipper<R: Read + io::Seek, O: AsRef<Path>> {
-
     source: R,
-
     outdir: O,
-
     strip_components: u8,
-
 }
 
 impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
@@ -98,8 +92,6 @@ impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
 
             stats.files = stats.files + 1;
         }
-
         Ok(stats)
     }
-
 }
