@@ -61,7 +61,7 @@ fn strip_single_dir_contents() {
  * Nested directories remain if only one directory is stripped.
 */
 #[test]
-fn strip_single_dir_subdir() {
+fn strip_single_dir_subdir() -> Result<(), std::io::Error> {
     let directory = TempDir::new("single_file").unwrap();
     let dir = directory.into_path();
     let archive = dir.join("archive.zip");
@@ -71,11 +71,11 @@ fn strip_single_dir_subdir() {
     writer.finish().unwrap();
     Unzipper::new(File::open(archive).unwrap(), &dir)
         .strip_components(1)
-        .unzip()
-        .unwrap();
+        .unzip()?;
 
     is_dir(dir.join("bar"));
     non_empty_file(dir.join("bar").join("baz.txt"));
+    Ok(())
 }
 
 /**

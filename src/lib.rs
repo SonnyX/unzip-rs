@@ -1,18 +1,10 @@
 extern crate zip;
-extern crate time;
-extern crate transformation_pipeline;
-
-mod transformation_metadata;
 
 use std::io;
 use std::io::prelude::Read;
 use std::fs;
 use std::path::{Path, PathBuf};
-use transformation_pipeline::TransformationPipeline;
-use transformation_metadata::ExtractionMetadata;
 
-mod strip_components;
-use strip_components::StripComponents;
 
 #[derive(Debug)]
 pub struct UnzipperStats {
@@ -44,53 +36,69 @@ impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
     }
 
     pub fn unzip(self) -> UnzipperResult {
-        let mut archive = zip::ZipArchive::new(self.source)?;
-        let outdir: &Path = Path::new(self.outdir.as_ref());
+        let mut zip = zip::ZipArchive::new(self.source)?;
 
         let mut stats = UnzipperStats {
             dirs: 0,
             files: 0,
         };
 
-        let pipeline: TransformationPipeline<ExtractionMetadata> = TransformationPipeline::new(vec![
-            Box::new(StripComponents::new(self.strip_components)),
-        ]);
+        for i in 0..zip.len() {
+            let mut entry = zip.by_index(i).unwrap();
+            let mut filename = PathBuf::new();
+            filename.push(entry.name());
 
-        for i in 0..archive.len() {
-            let mut file = archive.by_index(i)?;
-
-            let metadata = pipeline.run(ExtractionMetadata {
-                extract: true,
-                filename: file.name().to_owned(),
-                comment: file.comment().to_owned(),
-                compressed_size: file.compressed_size(),
-                uncompressed_size: file.size(),
-                crc32: file.crc32(),
-                data_start: file.data_start(),
-                last_modified: file.last_modified(),
-                unix_mode: file.unix_mode(),
-            })?;
-
-            if !metadata.extract {
-                continue;
+            if self.strip_components > 0 {
+                if filename.components().count() < self.strip_components.into() {
+                    continue;
+                }
+                let mut output: PathBuf = PathBuf::new();
+                output.push(".");
+                filename
+                    .components()
+                    .skip(self.strip_components.into())
+                    .map(|comp| comp.as_os_str())
+                    .for_each(|comp| output = output.join(comp));
+        
+                filename = output;
+                if filename.to_str().is_none() {
+                    return Err(io::Error::new(io::ErrorKind::Other, "Couldn't join stripped string."));
+                }
             }
 
-            let outpath: PathBuf = outdir.join(metadata.filename);
+            let outdir = Path::new(self.outdir.as_ref()).join(filename);
 
-            if let Some(parent_dir) = outpath.as_path().parent() {
-                fs::create_dir_all(&parent_dir)?;
-            }
-
-            if (&*file.name()).ends_with('/') {
+            if entry.is_dir() {
+                fs::create_dir_all(outdir)?;
                 stats.dirs = stats.dirs + 1;
                 continue;
             }
-            let mut outfile = fs::File::create(&outpath)?;
-            io::copy(&mut file, &mut outfile)?;
+            if let Some(parent_dir) = outdir.as_path().parent() {
+                fs::create_dir_all(&parent_dir)?;
+            }
 
-            // TODO: Handle unix_mode, last_modified
+            let mut dest = bin_open_options()
+                .write(true)
+                .create_new(true)
+                .open(outdir)?;
+            io::copy(&mut entry, &mut dest)?;
 
             stats.files = stats.files + 1;
+        }
+
+
+        #[cfg(unix)]
+        fn bin_open_options() -> fs::OpenOptions {
+            use std::os::unix::fs::OpenOptionsExt;
+
+            let mut opts = fs::OpenOptions::new();
+            opts.mode(0o755);
+            opts
+        }
+
+        #[cfg(not(unix))]
+        fn bin_open_options() -> fs::OpenOptions {
+            fs::OpenOptions::new()
         }
         Ok(stats)
     }
