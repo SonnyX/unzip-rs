@@ -10,5 +10,5 @@ temporary = "0.6.3"
 
 [dependencies]
 zip = "0.2.6"
-time = "0.1.38"
+time = "0.2.23"
 transformation-pipeline = "0.1.0"
