@@ -9,6 +9,6 @@ license = "MIT"
 temporary = "0.6.3"
 
 [dependencies]
-zip = "0.2.6"
+zip = "0.5.8"
 time = "0.1.38"
 transformation-pipeline = "0.1.0"
