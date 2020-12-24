@@ -1,12 +1,12 @@
 [package]
 name = "unzip"
 description = "Library to decompress all (or some) files from a zipped archive."
-version = "1.0.0"
+version = "1.0.1"
 authors = ["SonnyX <randy@vonderweide.nl>" , "Ryan Leonard (http://ryanleonard.us)"]
 license = "MIT"
 
 [dev-dependencies]
-temporary = "0.6.3"
+temporary = "0.6"
 
 [dependencies]
-zip = "0.5.8"
+zip = "0.5"
