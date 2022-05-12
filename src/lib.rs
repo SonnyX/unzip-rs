@@ -1,10 +1,9 @@
 extern crate zip;
 
+use std::fs;
 use std::io;
 use std::io::prelude::Read;
-use std::fs;
 use std::path::{Path, PathBuf};
-
 
 #[derive(Debug)]
 pub struct UnzipperStats {
@@ -21,7 +20,6 @@ pub struct Unzipper<R: Read + io::Seek, O: AsRef<Path>> {
 }
 
 impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
-
     pub fn new(reader: R, output: O) -> Unzipper<R, O> {
         Unzipper {
             source: reader,
@@ -38,15 +36,20 @@ impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
     pub fn unzip(self) -> UnzipperResult {
         let mut zip = zip::ZipArchive::new(self.source)?;
 
-        let mut stats = UnzipperStats {
-            dirs: 0,
-            files: 0,
-        };
+        let mut stats = UnzipperStats { dirs: 0, files: 0 };
 
         for i in 0..zip.len() {
             let mut entry = zip.by_index(i).unwrap();
             let mut filename = PathBuf::new();
-            filename.push(entry.name());
+            let name = entry.name();
+
+            if name.contains("\\") {
+                let dir_entry = name.split("\\").collect::<Vec<&str>>().join("/");
+
+                filename.push(dir_entry);
+            } else {
+                filename.push(entry.name());
+            }
 
             if self.strip_components > 0 {
                 if filename.components().count() < self.strip_components.into() {
@@ -59,10 +62,13 @@ impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
                     .skip(self.strip_components.into())
                     .map(|comp| comp.as_os_str())
                     .for_each(|comp| output = output.join(comp));
-        
+
                 filename = output;
                 if filename.to_str().is_none() {
-                    return Err(io::Error::new(io::ErrorKind::Other, "Couldn't join stripped string."));
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        "Couldn't join stripped string.",
+                    ));
                 }
             }
 
@@ -85,7 +91,6 @@ impl<R: Read + io::Seek, O: AsRef<Path>> Unzipper<R, O> {
 
             stats.files = stats.files + 1;
         }
-
 
         #[cfg(unix)]
         fn bin_open_options() -> fs::OpenOptions {
