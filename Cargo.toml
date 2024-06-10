@@ -9,4 +9,4 @@ license = "MIT"
 temporary = "0.7"
 
 [dependencies]
-zip = "1.1"
+zip = "2.1"
